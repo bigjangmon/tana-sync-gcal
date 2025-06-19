@@ -6,8 +6,6 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"lib": ["ESNext"],
-		"types": ["vite/client"],
-		"jsx": "react-jsx",
-		"jsxImportSource": "hono/jsx"
+		"types": ["vite/client", "./worker-configuration.d.ts"]
 	}
 }
