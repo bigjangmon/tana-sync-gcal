@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import {
 	createCalendarClient,
 	type CalendarClient,
-} from '@/common/utils/google-calendar';
-import { getValidatedEnv } from '@/common/utils/env';
+} from './common/utils/google-calendar';
+import { getValidatedEnv } from './common/utils/env';
 
 const app = new Hono<{
 	Variables: {

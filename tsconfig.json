@@ -2,14 +2,11 @@
 	"compilerOptions": {
 		"target": "ESNext",
 		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"strict": true,
-		"skipLibCheck": true,
 		"lib": ["ESNext"],
+		"skipLibCheck": true,
+		"strict": true,
 		"types": ["vite/client", "./worker-configuration.d.ts"],
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["./src/*"]
-		}
+		"moduleResolution": "bundler",
+		"noEmit": true
 	}
 }

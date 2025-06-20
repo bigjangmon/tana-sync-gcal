@@ -1,4 +1,6 @@
-import { calendar_v3, google } from 'googleapis';
+import { calendar } from '@googleapis/calendar';
+import { JWT } from 'google-auth-library';
+import type { calendar_v3 } from '@googleapis/calendar';
 
 export type CalendarClient = calendar_v3.Calendar;
 
@@ -11,7 +13,7 @@ export function createCalendarClient(
 	email: string,
 	privateKey: string
 ): CalendarClient {
-	const auth = new google.auth.JWT({
+	const auth = new JWT({
 		email,
 		key: privateKey.replace(/\\n/g, '\n'),
 		scopes: [
@@ -19,7 +21,7 @@ export function createCalendarClient(
 			'https://www.googleapis.com/auth/calendar.events',
 		],
 	});
-	return google.calendar({ version: 'v3', auth });
+	return calendar({ version: 'v3', auth });
 }
 
 /**
