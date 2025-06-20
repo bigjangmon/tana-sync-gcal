@@ -2,16 +2,16 @@
 	"name": "tana-sync-gcal",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev",
+		"dev": "vite",
+		"cf-dev": "wrangler dev",
 		"build": "tsc -b && vite build",
 		"preview": "$npm_execpath run build && vite preview",
 		"deploy": "$npm_execpath run build && wrangler deploy",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings"
 	},
 	"dependencies": {
-		"@googleapis/calendar": "^10.0.1",
 		"@hono/zod-validator": "^0.7.0",
-		"google-auth-library": "^10.1.0",
+		"googleapis": "^148.0.0",
 		"hono": "^4.7.11",
 		"zod": "^3.25.67"
 	},
@@ -21,6 +21,9 @@
 		"typescript": "^5.8.3",
 		"vite": "^6.3.5",
 		"wrangler": "^4.20.3"
+	},
+	"overrides": {
+		"gtoken": "github:BjornTheProgrammer/node-gtoken"
 	},
 	"packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
 }

@@ -1,6 +1,5 @@
-import { calendar } from '@googleapis/calendar';
-import { JWT } from 'google-auth-library';
-import type { calendar_v3 } from '@googleapis/calendar';
+import { google } from 'googleapis';
+import type { calendar_v3 } from 'googleapis';
 
 export type CalendarClient = calendar_v3.Calendar;
 export type CalendarEvents = calendar_v3.Schema$Events;
@@ -8,22 +7,26 @@ export type CalendarEvent = calendar_v3.Schema$Event;
 
 /**
  * - Returns a calendar client to manipulate events and other calendar data.
+ * - Uses googleapis with service account authentication for Cloudflare Workers
  *
- * @reference https://googleapis.dev/nodejs/googleapis/latest/calendar/classes/Calendar.html#info
+ * @reference https://developers.google.com/calendar/api/guides/service-accounts
  */
 export function createCalendarClient(
 	email: string,
 	privateKey: string
 ): CalendarClient {
-	const auth = new JWT({
-		email,
-		key: privateKey.replace(/\\n/g, '\n'),
+	const auth = new google.auth.GoogleAuth({
+		credentials: {
+			client_email: email,
+			private_key: privateKey.replace(/\\n/g, '\n'),
+		},
 		scopes: [
 			'https://www.googleapis.com/auth/calendar',
 			'https://www.googleapis.com/auth/calendar.events',
 		],
 	});
-	return calendar({ version: 'v3', auth });
+
+	return google.calendar({ version: 'v3', auth });
 }
 
 /**
