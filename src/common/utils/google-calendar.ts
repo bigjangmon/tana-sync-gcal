@@ -3,6 +3,8 @@ import { JWT } from 'google-auth-library';
 import type { calendar_v3 } from '@googleapis/calendar';
 
 export type CalendarClient = calendar_v3.Calendar;
+export type CalendarEvents = calendar_v3.Schema$Events;
+export type CalendarEvent = calendar_v3.Schema$Event;
 
 /**
  * - Returns a calendar client to manipulate events and other calendar data.
@@ -39,7 +41,7 @@ export async function listEvents(
 		orderBy?: 'startTime' | 'updated';
 		singleEvents?: boolean;
 	}
-): Promise<calendar_v3.Schema$Events> {
+): Promise<CalendarEvents> {
 	const res = await client.events.list({
 		calendarId,
 		timeMin: params?.timeMin,
@@ -63,7 +65,7 @@ export async function getEvent(
 	client: CalendarClient,
 	calendarId: string,
 	eventId: string
-): Promise<calendar_v3.Schema$Event> {
+): Promise<CalendarEvent> {
 	const res = await client.events.get({ calendarId, eventId });
 
 	return res.data;
@@ -79,8 +81,8 @@ export async function getEvent(
 export async function insertEvent(
 	client: CalendarClient,
 	calendarId: string,
-	event: Omit<calendar_v3.Schema$Event, 'attendees'>
-): Promise<calendar_v3.Schema$Event> {
+	event: Omit<CalendarEvent, 'attendees'>
+): Promise<CalendarEvent> {
 	const res = await client.events.insert({
 		calendarId,
 		requestBody: event,
@@ -100,8 +102,8 @@ export async function updateEvent(
 	client: CalendarClient,
 	calendarId: string,
 	eventId: string,
-	event: calendar_v3.Schema$Event
-): Promise<calendar_v3.Schema$Event> {
+	event: CalendarEvent
+): Promise<CalendarEvent> {
 	const res = await client.events.update({
 		calendarId,
 		eventId,
@@ -123,7 +125,7 @@ export async function moveEventToAnotherCalendar(
 	calendarId: string,
 	eventId: string,
 	destinationCalendarId: string
-): Promise<calendar_v3.Schema$Event> {
+): Promise<CalendarEvent> {
 	const res = await client.events.move({
 		calendarId,
 		eventId,

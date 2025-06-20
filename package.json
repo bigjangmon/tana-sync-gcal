@@ -10,6 +10,7 @@
 	},
 	"dependencies": {
 		"@googleapis/calendar": "^10.0.1",
+		"@hono/zod-validator": "^0.7.0",
 		"google-auth-library": "^10.1.0",
 		"hono": "^4.7.11",
 		"zod": "^3.25.67"

@@ -11,6 +11,9 @@ importers:
       '@googleapis/calendar':
         specifier: ^10.0.1
         version: 10.0.1
+      '@hono/zod-validator':
+        specifier: ^0.7.0
+        version: 0.7.0(hono@4.8.1)(zod@3.25.67)
       google-auth-library:
         specifier: ^10.1.0
         version: 10.1.0
@@ -405,6 +408,12 @@ packages:
   '@googleapis/calendar@10.0.1':
     resolution: {integrity: sha512-lOYg3r1MkGsLTQfuIjspIaSvFv0a7Ldi/SvRuQnQ5E6d9DdXbILOhlPpXefxN6hi7BIvWKG0F5pLoc6kK12chA==}
     engines: {node: '>=12.0.0'}
+
+  '@hono/zod-validator@0.7.0':
+    resolution: {integrity: sha512-qe2ZE6sHFE98dcUrbYMtS3bAV8hqcCOflykvZga2S7XhmNSZzT+dIz4OuMILsjLHkJw9JMn912/dB7dQOmuPvg==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.25.0
 
   '@img/sharp-darwin-arm64@0.33.5':
     resolution: {integrity: sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ==}
@@ -1313,6 +1322,11 @@ snapshots:
       googleapis-common: 8.0.2-rc.0
     transitivePeerDependencies:
       - supports-color
+
+  '@hono/zod-validator@0.7.0(hono@4.8.1)(zod@3.25.67)':
+    dependencies:
+      hono: 4.8.1
+      zod: 3.25.67
 
   '@img/sharp-darwin-arm64@0.33.5':
     optionalDependencies:

@@ -4,6 +4,7 @@ import {
 	type CalendarClient,
 } from './common/utils/google-calendar';
 import { getValidatedEnv } from './common/utils/env';
+import events from './api/events';
 
 const app = new Hono<{
 	Variables: {
@@ -25,5 +26,7 @@ app.use('*', async (c, next) => {
 app.get('/', (c) => {
 	return c.text('Hello');
 });
+
+app.route('/events', events);
 
 export default app;
