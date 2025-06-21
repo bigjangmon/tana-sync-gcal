@@ -79,8 +79,8 @@ app.put(
 	}
 );
 
-app.delete(
-	'/:eventId',
+app.post(
+	'/:eventId/delete',
 	zValidator('query', DeleteEventQuerySchema),
 	async (c) => {
 		const accessToken = c.get('accessToken');
