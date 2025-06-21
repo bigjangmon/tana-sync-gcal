@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { calendar_v3 } from 'googleapis';
+import type { calendar_v3 } from '@googleapis/calendar';
 
 const TANA_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TANA_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;

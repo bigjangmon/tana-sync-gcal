@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TanaDateInfoSchema } from '../../common/utils/handle-tana-date';
+import { TanaDateInfoSchema } from '@/common/utils/handle-tana-date';
 
 export const PostEventQuerySchema = z.object({
 	to: z
