@@ -9,15 +9,17 @@ import {
 	UpdateEventQuerySchema,
 	PartialEventDataSchema,
 } from './schemas';
-import { createEventService } from './service';
+import * as eventService from './service';
 import { formatZodErrors } from '../../common/utils/format-zod-errors';
-import type { CalendarClient } from '../../common/utils/google-calendar';
+import {
+	getValidatedGoogleAuthEnv,
+	getAccessToken,
+} from '../../common/utils/google-auth';
 
 const app = new Hono<
 	{
 		Variables: {
-			calendarClient: CalendarClient;
-			eventService: ReturnType<typeof createEventService>;
+			accessToken: string;
 		};
 	},
 	BlankSchema,
@@ -25,9 +27,9 @@ const app = new Hono<
 >();
 
 app.use('*', async (c, next) => {
-	const calendarClient = c.get('calendarClient');
-	const eventService = createEventService(calendarClient);
-	c.set('eventService', eventService);
+	const env = getValidatedGoogleAuthEnv(c);
+	const accessToken = await getAccessToken(env);
+	c.set('accessToken', accessToken);
 	await next();
 });
 
@@ -42,10 +44,10 @@ app.post(
 		}
 	}),
 	async (c) => {
-		const eventService = c.get('eventService');
+		const accessToken = c.get('accessToken');
 		const { to: calendarId } = c.req.valid('query');
 		const data = c.req.valid('json');
-		const ret = await eventService.createEvent(calendarId, data);
+		const ret = await eventService.createEvent(accessToken, calendarId, data);
 
 		return c.text(ret);
 	}
@@ -62,18 +64,17 @@ app.put(
 		}
 	}),
 	async (c) => {
-		const eventService = c.get('eventService');
+		const accessToken = c.get('accessToken');
 		const { from: fromCalendarId, to: toCalendarId } = c.req.valid('query');
 		const { eventId } = c.req.param();
 		const data = c.req.valid('json');
-
 		const ret = await eventService.updateEvent(
+			accessToken,
 			fromCalendarId,
 			eventId,
 			data,
 			toCalendarId
 		);
-
 		return c.text(ret);
 	}
 );
@@ -82,11 +83,14 @@ app.delete(
 	'/:eventId',
 	zValidator('query', DeleteEventQuerySchema),
 	async (c) => {
-		const eventService = c.get('eventService');
+		const accessToken = c.get('accessToken');
 		const { from: calendarId } = c.req.valid('query');
 		const { eventId } = c.req.param();
-
-		const success = await eventService.deleteEvent(calendarId, eventId);
+		const success = await eventService.deleteEvent(
+			accessToken,
+			calendarId,
+			eventId
+		);
 
 		return c.text(
 			success

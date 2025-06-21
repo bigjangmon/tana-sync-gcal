@@ -1,32 +1,35 @@
-import { google } from 'googleapis';
-import type { calendar_v3 } from 'googleapis';
+import type { calendar_v3 } from '@googleapis/calendar';
 
-export type CalendarClient = calendar_v3.Calendar;
 export type CalendarEvents = calendar_v3.Schema$Events;
 export type CalendarEvent = calendar_v3.Schema$Event;
 
+const GOOGLE_API_BASE = 'https://www.googleapis.com/calendar/v3';
+
 /**
- * - Returns a calendar client to manipulate events and other calendar data.
- * - Uses googleapis with service account authentication for Cloudflare Workers
- *
- * @reference https://developers.google.com/calendar/api/guides/service-accounts
+ * Make authenticated request to Google Calendar API
  */
-export function createCalendarClient(
-	email: string,
-	privateKey: string
-): CalendarClient {
-	const auth = new google.auth.GoogleAuth({
-		credentials: {
-			client_email: email,
-			private_key: privateKey.replace(/\\n/g, '\n'),
+async function makeCalendarRequest(
+	token: string,
+	path: string,
+	options: RequestInit = {}
+): Promise<Response> {
+	const url = `${GOOGLE_API_BASE}${path}`;
+	const response = await fetch(url, {
+		...options,
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/json',
+			...options.headers,
 		},
-		scopes: [
-			'https://www.googleapis.com/auth/calendar',
-			'https://www.googleapis.com/auth/calendar.events',
-		],
 	});
 
-	return google.calendar({ version: 'v3', auth });
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(
+			`Google Calendar API request failed: ${response.status} ${errorText}`
+		);
+	}
+	return response;
 }
 
 /**
@@ -35,7 +38,7 @@ export function createCalendarClient(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/list
  */
 export async function listEvents(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	params?: {
 		timeMin?: string;
@@ -45,16 +48,20 @@ export async function listEvents(
 		singleEvents?: boolean;
 	}
 ): Promise<CalendarEvents> {
-	const res = await client.events.list({
-		calendarId,
-		timeMin: params?.timeMin,
-		timeMax: params?.timeMax,
-		maxResults: params?.maxResults,
-		orderBy: params?.orderBy,
-		singleEvents: params?.singleEvents,
-	});
+	const searchParams = new URLSearchParams();
+	if (params?.timeMin) searchParams.set('timeMin', params.timeMin);
+	if (params?.timeMax) searchParams.set('timeMax', params.timeMax);
+	if (params?.maxResults)
+		searchParams.set('maxResults', params.maxResults.toString());
+	if (params?.orderBy) searchParams.set('orderBy', params.orderBy);
+	if (params?.singleEvents)
+		searchParams.set('singleEvents', params.singleEvents.toString());
 
-	return res.data;
+	const path = `/calendars/${encodeURIComponent(
+		calendarId
+	)}/events?${searchParams.toString()}`;
+	const response = await makeCalendarRequest(token, path);
+	return await response.json();
 }
 
 /**
@@ -65,13 +72,15 @@ export async function listEvents(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/get
  */
 export async function getEvent(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	eventId: string
 ): Promise<CalendarEvent> {
-	const res = await client.events.get({ calendarId, eventId });
-
-	return res.data;
+	const path = `/calendars/${encodeURIComponent(
+		calendarId
+	)}/events/${encodeURIComponent(eventId)}`;
+	const response = await makeCalendarRequest(token, path);
+	return await response.json();
 }
 
 /**
@@ -82,16 +91,16 @@ export async function getEvent(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/insert
  */
 export async function insertEvent(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	event: Omit<CalendarEvent, 'attendees'>
 ): Promise<CalendarEvent> {
-	const res = await client.events.insert({
-		calendarId,
-		requestBody: event,
+	const path = `/calendars/${encodeURIComponent(calendarId)}/events`;
+	const response = await makeCalendarRequest(token, path, {
+		method: 'POST',
+		body: JSON.stringify(event),
 	});
-
-	return res.data;
+	return await response.json();
 }
 
 /**
@@ -102,18 +111,19 @@ export async function insertEvent(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/update
  */
 export async function updateEvent(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	eventId: string,
 	event: CalendarEvent
 ): Promise<CalendarEvent> {
-	const res = await client.events.update({
-		calendarId,
-		eventId,
-		requestBody: event,
+	const path = `/calendars/${encodeURIComponent(
+		calendarId
+	)}/events/${encodeURIComponent(eventId)}`;
+	const response = await makeCalendarRequest(token, path, {
+		method: 'PUT',
+		body: JSON.stringify(event),
 	});
-
-	return res.data;
+	return await response.json();
 }
 
 /**
@@ -124,18 +134,18 @@ export async function updateEvent(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/move
  */
 export async function moveEventToAnotherCalendar(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	eventId: string,
 	destinationCalendarId: string
 ): Promise<CalendarEvent> {
-	const res = await client.events.move({
-		calendarId,
-		eventId,
-		destination: destinationCalendarId,
-	});
-
-	return res.data;
+	const path = `/calendars/${encodeURIComponent(
+		calendarId
+	)}/events/${encodeURIComponent(
+		eventId
+	)}/move?destination=${encodeURIComponent(destinationCalendarId)}`;
+	const response = await makeCalendarRequest(token, path, { method: 'POST' });
+	return await response.json();
 }
 
 /**
@@ -144,14 +154,13 @@ export async function moveEventToAnotherCalendar(
  * @reference https://developers.google.com/workspace/calendar/api/v3/reference/events/delete
  */
 export async function deleteEvent(
-	client: CalendarClient,
+	token: string,
 	calendarId: string,
 	eventId: string
 ): Promise<boolean> {
-	await client.events.delete({
-		calendarId,
-		eventId,
-	});
-
+	const path = `/calendars/${encodeURIComponent(
+		calendarId
+	)}/events/${encodeURIComponent(eventId)}`;
+	await makeCalendarRequest(token, path, { method: 'DELETE' });
 	return true;
 }
