@@ -65,18 +65,36 @@ Built as a serverless API that bridges the gap between your personal knowledge s
 
 #### 1.5 Extract Information from JSON Key
 
-Open the downloaded JSON file in a text editor. You'll need these two values:
+Open the downloaded JSON file in a text editor. You'll need these five values:
 
-1. **Service Account Email**: Look for `"client_email"` field
+1. **Project ID**: Look for `"project_id"` field
+
+   ```json
+   "project_id": "your-project-name"
+   ```
+
+2. **Private Key ID**: Look for `"private_key_id"` field
+
+   ```json
+   "private_key_id": "abc123def456..."
+   ```
+
+3. **Private Key**: Look for `"private_key"` field
+
+```json
+"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
+```
+
+4. **Client ID**: Look for `"client_id"` field
+
+   ```json
+   "client_id": "123456789012345678901"
+   ```
+
+5. **Service Account Email**: Look for `"client_email"` field
 
    ```json
    "client_email": "tana-sync-service@your-project-name.iam.gserviceaccount.com"
-   ```
-
-2. **Private Key**: Look for `"private_key"` field
-
-   ```json
-   "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
    ```
 
 > **Important**: Keep this JSON file secure and never commit it to version control!
@@ -108,11 +126,14 @@ Open the downloaded JSON file in a text editor. You'll need these two values:
 2. Add these environment variables using the values from your JSON file (step 1.5):
 
    ```
-   GOOGLE_CLIENT_EMAIL = your-service-account@project-name.iam.gserviceaccount.com
+   GOOGLE_PROJECT_ID = your-project-name
+   GOOGLE_PRIVATE_KEY_ID = abc123def456...
    GOOGLE_PRIVATE_KEY = -----BEGIN PRIVATE KEY-----\n[your-key-content]\n-----END PRIVATE KEY-----\n
+   GOOGLE_CLIENT_ID = 123456789012345678901
+   GOOGLE_CLIENT_EMAIL = your-service-account@project-name.iam.gserviceaccount.com
    ```
 
-   > **Note**: Use the exact values from the `"client_email"` and `"private_key"` fields in your JSON file
+   > **Note**: Use the exact values from your JSON file fields. Copy them exactly as they appear, including newlines in the private key.
 
 #### 2.4 Deploy
 
@@ -150,8 +171,11 @@ pnpm run deploy
 Add your credentials to `.dev.vars` file:
 
 ```bash
-GOOGLE_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+GOOGLE_PROJECT_ID=your-project-name
+GOOGLE_PRIVATE_KEY_ID=abc123def456...
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_CLIENT_ID=123456789012345678901
+GOOGLE_CLIENT_EMAIL=your-service-account@project.iam.gserviceaccount.com
 ```
 
 > **Note**: `.dev.vars` is for local development. For production, set environment variables in your Cloudflare Workers dashboard.
