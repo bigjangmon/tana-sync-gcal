@@ -7,6 +7,9 @@
 		"strict": true,
 		"types": ["vite/client", "./worker-configuration.d.ts"],
 		"moduleResolution": "bundler",
-		"noEmit": true
+		"noEmit": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	}
 }

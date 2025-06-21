@@ -2,6 +2,11 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { BlankSchema } from 'hono/types';
 import { zValidator } from '@hono/zod-validator';
+import { formatZodErrors } from '@/common/utils/format-zod-errors';
+import {
+	getValidatedGoogleAuthEnv,
+	getAccessToken,
+} from '@/common/utils/google-auth';
 import {
 	EventDataSchema,
 	PostEventQuerySchema,
@@ -10,11 +15,6 @@ import {
 	PartialEventDataSchema,
 } from './schemas';
 import * as eventService from './service';
-import { formatZodErrors } from '../../common/utils/format-zod-errors';
-import {
-	getValidatedGoogleAuthEnv,
-	getAccessToken,
-} from '../../common/utils/google-auth';
 
 const app = new Hono<
 	{

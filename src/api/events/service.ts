@@ -1,6 +1,6 @@
+import * as gc from '@/common/utils/google-calendar';
+import { buildEventDateTimeInfo } from '@/common/utils/handle-tana-date';
 import type { EventData, PartialEventData } from './schemas';
-import * as gc from '../../common/utils/google-calendar';
-import { buildEventDateTimeInfo } from '../../common/utils/handle-tana-date';
 
 function buildTanaPaste(event: gc.CalendarEvent, calendarId: string) {
 	return `Event URL::${event.htmlLink}\nEvent ID::${event.id}\nSynced Calendar ID::${calendarId}`;
