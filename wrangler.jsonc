@@ -7,5 +7,15 @@
 		"enabled": true
 	},
 	"upload_source_maps": true,
-	"main": "./src/index.ts"
+	"main": "./src/index.ts",
+	"vars": {
+		"WORKER_ENV": "production"
+	},
+	"env": {
+		"development": {
+			"vars": {
+				"WORKER_ENV": "development"
+			}
+		}
+	}
 }
