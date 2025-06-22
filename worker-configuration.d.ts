@@ -3,6 +3,7 @@
 // Runtime types generated with workerd@1.20250617.0 2025-04-01 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
+		WORKER_ENV: string;
 		GOOGLE_PROJECT_ID: string;
 		GOOGLE_PRIVATE_KEY_ID: string;
 		GOOGLE_PRIVATE_KEY: string;
@@ -12,10 +13,23 @@ declare namespace Cloudflare {
 }
 interface CloudflareBindings extends Cloudflare.Env {}
 type StringifyValues<EnvType extends Record<string, unknown>> = {
-	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
+	[Binding in keyof EnvType]: EnvType[Binding] extends string
+		? EnvType[Binding]
+		: string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "GOOGLE_PROJECT_ID" | "GOOGLE_PRIVATE_KEY_ID" | "GOOGLE_PRIVATE_KEY" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_EMAIL">> {}
+	interface ProcessEnv
+		extends StringifyValues<
+			Pick<
+				Cloudflare.Env,
+				| 'WORKER_ENV'
+				| 'GOOGLE_PROJECT_ID'
+				| 'GOOGLE_PRIVATE_KEY_ID'
+				| 'GOOGLE_PRIVATE_KEY'
+				| 'GOOGLE_CLIENT_ID'
+				| 'GOOGLE_CLIENT_EMAIL'
+			>
+		> {}
 }
 
 // Begin runtime types
