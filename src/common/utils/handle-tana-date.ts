@@ -94,10 +94,16 @@ export function extractTanaDateInfo(date: TanaDateValue): TanaDateInfo {
 
 export const TanaDateInfoSchema = z
 	.string()
-	.refine(validateTanaDateValue, {
-		message:
-			'Invalid Tana date pattern. Expected formats: [[date:YYYY-MM-DD]], [[date:YYYY-MM-DDTHH:MM]], [[date:YYYY-MM-DD/YYYY-MM-DD]], [[date:YYYY-MM-DDTHH:MM/YYYY-MM-DD]], or [[date:YYYY-MM-DDTHH:MM/YYYY-MM-DDTHH:MM]]',
-	})
+	.min(1, 'Date value cannot be empty')
+	.refine(validateTanaDateValue, (value) => ({
+		message: `Invalid Tana date format: "${value}". Expected formats:
+	- "[[date:YYYY-MM-DD]]" => Single date
+	- "[[date:YYYY-MM-DDTHH:MM]]" => Single date with time
+	- "[[date:YYYY-MM-DD/YYYY-MM-DD]]" => Date range
+	- "[[date:YYYY-MM-DDTHH:MM/YYYY-MM-DD]]" => Start time with end date
+	- "[[date:YYYY-MM-DDTHH:MM/YYYY-MM-DDTHH:MM]]" => Full date-time range
+	Example: "[[date:2025-01-15]]" or "[[date:2025-01-15T09:30/2025-01-16T17:00]]"`,
+	}))
 	.transform(extractTanaDateInfo);
 
 export function buildEventDateTimeInfo(

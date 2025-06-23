@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import type { BlankSchema } from 'hono/types';
-import { zValidator } from '@hono/zod-validator';
-import { formatZodErrors } from '@/common/utils/format-zod-errors';
+import { zValidator } from '@/common/utils/zod-wrapper';
 import {
 	getValidatedGoogleAuthEnv,
 	getAccessToken,
@@ -11,7 +10,7 @@ import {
 	EventDataSchema,
 	PostEventQuerySchema,
 	DeleteEventQuerySchema,
-	UpdateEventQuerySchema,
+	PutEventQuerySchema,
 	PartialEventDataSchema,
 } from './schemas';
 import * as eventService from './service';
@@ -27,22 +26,22 @@ const app = new Hono<
 >();
 
 app.use('*', async (c, next) => {
-	const env = getValidatedGoogleAuthEnv(c);
-	const accessToken = await getAccessToken(env);
-	c.set('accessToken', accessToken);
-	await next();
+	try {
+		const env = getValidatedGoogleAuthEnv(c);
+		const accessToken = await getAccessToken(env);
+		c.set('accessToken', accessToken);
+		await next();
+	} catch (error) {
+		throw new HTTPException(401, {
+			message: 'Authentication failed',
+		});
+	}
 });
 
 app.post(
 	'/',
 	zValidator('query', PostEventQuerySchema),
-	zValidator('json', EventDataSchema, (result, c) => {
-		if (!result.success) {
-			throw new HTTPException(400, {
-				message: `Invalid event data: ${formatZodErrors(result.error)}`,
-			});
-		}
-	}),
+	zValidator('json', EventDataSchema),
 	async (c) => {
 		const accessToken = c.get('accessToken');
 		const { to: calendarId } = c.req.valid('query');
@@ -55,14 +54,8 @@ app.post(
 
 app.put(
 	'/:eventId',
-	zValidator('query', UpdateEventQuerySchema),
-	zValidator('json', PartialEventDataSchema, (result, c) => {
-		if (!result.success) {
-			throw new HTTPException(400, {
-				message: `Invalid event data: ${formatZodErrors(result.error)}`,
-			});
-		}
-	}),
+	zValidator('query', PutEventQuerySchema),
+	zValidator('json', PartialEventDataSchema),
 	async (c) => {
 		const accessToken = c.get('accessToken');
 		const { from: fromCalendarId, to: toCalendarId } = c.req.valid('query');
@@ -75,6 +68,7 @@ app.put(
 			data,
 			toCalendarId
 		);
+
 		return c.text(ret);
 	}
 );
@@ -86,17 +80,18 @@ app.post(
 		const accessToken = c.get('accessToken');
 		const { from: calendarId } = c.req.valid('query');
 		const { eventId } = c.req.param();
+
 		const success = await eventService.deleteEvent(
 			accessToken,
 			calendarId,
 			eventId
 		);
 
-		return c.text(
-			success
-				? `Event deleted successfully: ${eventId}`
-				: `Failed to delete event: ${eventId}`
-		);
+		const ret = success
+			? `Event deleted successfully: ${eventId}`
+			: `Failed to delete event: ${eventId}`;
+
+		return c.text(ret);
 	}
 );
 

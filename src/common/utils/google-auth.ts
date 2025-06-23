@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { env } from 'hono/adapter';
 import type { Context } from 'hono';
 import GoogleAuth, { GoogleKey } from 'cloudflare-workers-and-google-oauth';
-import { formatZodErrors } from '@/common/utils/format-zod-errors';
+import { formatZodErrors } from '@/common/utils/zod-wrapper';
 
 const googleAuthEnvSchema = z.object({
 	GOOGLE_PROJECT_ID: z.string().min(1, 'Google project ID is required'),
@@ -21,7 +21,7 @@ export function getValidatedGoogleAuthEnv(c: Context): GoogleAuthEnv {
 	const parsedEnv = googleAuthEnvSchema.safeParse(rawEnv);
 
 	if (!parsedEnv.success) {
-		throw new Error(formatZodErrors(parsedEnv.error));
+		throw new Error(formatZodErrors(parsedEnv.error).join('\n'));
 	}
 
 	return parsedEnv.data;
