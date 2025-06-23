@@ -99,6 +99,34 @@ export async function createEvent(
 }
 
 /**
+ * Retrieves an existing event from the specified Google Calendar and returns event information
+ * formatted as Tana Paste content for seamless integration into Tana.
+ *
+ * @param accessToken - The Google Calendar client access token
+ * @param calendarId - The Google Calendar ID where the event is located
+ * @param eventId - The unique identifier of the event to be retrieved
+ * @param fieldsToReturn - Array of field configurations specifying which properties to include in the response:
+ *   - `field` (string): The display name for the field in Tana
+ *   - `property` (string): The corresponding property name from the event object (use "calendarId" for calendar ID)
+ *
+ * @returns Tana Paste formatted string containing the specified event fields
+ */
+export async function getEvent(
+	accessToken: string,
+	calendarId: string,
+	eventId: string,
+	fieldsToReturn: EventFieldsToReturn
+): Promise<string> {
+	const event = await gc.getEvent(accessToken, calendarId, eventId);
+
+	if (!event) {
+		throw new Error(`Event not found: ${eventId}`);
+	}
+
+	return buildTanaPaste(event, calendarId, fieldsToReturn);
+}
+
+/**
  * Updates an existing event in the specified Google Calendar with optional calendar migration.
  * Supports partial updates - only provided fields will be updated.
  *

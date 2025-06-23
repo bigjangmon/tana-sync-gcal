@@ -12,6 +12,7 @@ import {
 	PutEventQuerySchema,
 	PutEventBodySchema,
 	DeleteEventQuerySchema,
+	GetEventQuerySchema,
 } from './schemas';
 import { DEFAULT_OPTIONS } from './constants';
 import * as eventService from './service';
@@ -56,6 +57,21 @@ app.post(
 		return c.text(ret);
 	}
 );
+
+app.get('/:eventId', zValidator('query', GetEventQuerySchema), async (c) => {
+	const accessToken = c.get('accessToken');
+	const { from: calendarId, fieldsToReturn } = c.req.valid('query');
+	const { eventId } = c.req.param();
+
+	const ret = await eventService.getEvent(
+		accessToken,
+		calendarId,
+		eventId,
+		fieldsToReturn
+	);
+
+	return c.text(ret);
+});
 
 app.put(
 	'/:eventId',

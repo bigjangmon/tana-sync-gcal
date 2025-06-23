@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TanaDateInfoSchema } from '@/common/utils/handle-tana-date';
+import { DEFAULT_FIELDS_TO_RETURN } from './constants';
 
 export const EventDataSchema = z.object({
 	name: z.string().min(1, 'Event name is required').trim(),
@@ -59,6 +60,13 @@ export const PostEventQuerySchema = z.object({
 export const PostEventBodySchema = z.object({
 	data: EventDataSchema,
 	options: EventOptionsSchema.optional(),
+});
+
+export const GetEventQuerySchema = z.object({
+	from: z
+		.string({ required_error: 'from(Calendar ID) is required' })
+		.min(1, 'from(Calendar ID) cannot be empty'),
+	fieldsToReturn: EventFieldsToReturnSchema.default(DEFAULT_FIELDS_TO_RETURN),
 });
 
 export const PutEventQuerySchema = z.object({
