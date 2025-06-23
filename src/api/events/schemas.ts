@@ -30,10 +30,25 @@ export const EventDataSchema = z.object({
 		.transform((val) => val.trim()),
 });
 
+export const EventFieldsToReturnSchema = z.array(
+	z.object({
+		field: z.string(),
+		property: z.string(),
+	})
+);
+
+export const EventOptionsSchema = z.object({
+	prefix: z.string().optional(),
+	suffix: z.string().optional(),
+	fieldsToReturn: EventFieldsToReturnSchema.optional(),
+});
+
 export const PartialEventDataSchema = EventDataSchema.partial();
 
 export type EventData = z.infer<typeof EventDataSchema>;
 export type PartialEventData = z.infer<typeof PartialEventDataSchema>;
+export type EventFieldsToReturn = z.infer<typeof EventFieldsToReturnSchema>;
+export type EventOptions = z.infer<typeof EventOptionsSchema>;
 
 export const PostEventQuerySchema = z.object({
 	to: z
@@ -41,11 +56,21 @@ export const PostEventQuerySchema = z.object({
 		.min(1, 'to(Calendar ID) cannot be empty'),
 });
 
+export const PostEventBodySchema = z.object({
+	data: EventDataSchema,
+	options: EventOptionsSchema.optional(),
+});
+
 export const PutEventQuerySchema = z.object({
 	from: z
 		.string({ required_error: 'from(Calendar ID) is required' })
 		.min(1, 'from(Calendar ID) cannot be empty'),
 	to: z.string().min(1, 'to(Calendar ID) cannot be empty').optional(),
+});
+
+export const PutEventBodySchema = z.object({
+	data: PartialEventDataSchema,
+	options: EventOptionsSchema.optional(),
 });
 
 export const DeleteEventQuerySchema = z.object({

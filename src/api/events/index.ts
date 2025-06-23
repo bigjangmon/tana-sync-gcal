@@ -7,12 +7,13 @@ import {
 	getAccessToken,
 } from '@/common/utils/google-auth';
 import {
-	EventDataSchema,
 	PostEventQuerySchema,
-	DeleteEventQuerySchema,
+	PostEventBodySchema,
 	PutEventQuerySchema,
-	PartialEventDataSchema,
+	PutEventBodySchema,
+	DeleteEventQuerySchema,
 } from './schemas';
+import { DEFAULT_OPTIONS } from './constants';
 import * as eventService from './service';
 
 const app = new Hono<
@@ -41,12 +42,16 @@ app.use('*', async (c, next) => {
 app.post(
 	'/',
 	zValidator('query', PostEventQuerySchema),
-	zValidator('json', EventDataSchema),
+	zValidator('json', PostEventBodySchema),
 	async (c) => {
 		const accessToken = c.get('accessToken');
 		const { to: calendarId } = c.req.valid('query');
-		const data = c.req.valid('json');
-		const ret = await eventService.createEvent(accessToken, calendarId, data);
+		const { data, options } = c.req.valid('json');
+
+		const ret = await eventService.createEvent(accessToken, calendarId, data, {
+			...DEFAULT_OPTIONS,
+			...options,
+		});
 
 		return c.text(ret);
 	}
@@ -55,17 +60,19 @@ app.post(
 app.put(
 	'/:eventId',
 	zValidator('query', PutEventQuerySchema),
-	zValidator('json', PartialEventDataSchema),
+	zValidator('json', PutEventBodySchema),
 	async (c) => {
 		const accessToken = c.get('accessToken');
 		const { from: fromCalendarId, to: toCalendarId } = c.req.valid('query');
 		const { eventId } = c.req.param();
-		const data = c.req.valid('json');
+		const { data, options } = c.req.valid('json');
+
 		const ret = await eventService.updateEvent(
 			accessToken,
 			fromCalendarId,
 			eventId,
 			data,
+			{ ...DEFAULT_OPTIONS, ...options },
 			toCalendarId
 		);
 
