@@ -1,9 +1,62 @@
 import * as gc from '@/common/utils/google-calendar';
 import { buildEventDateTimeInfo } from '@/common/utils/handle-tana-date';
-import type { EventData, PartialEventData } from './schemas';
+import {
+	EventData,
+	EventFieldsToReturn,
+	EventOptions,
+	PartialEventData,
+} from './schemas';
+import { DEFAULT_OPTIONS } from './constants';
 
-function buildTanaPaste(event: gc.CalendarEvent, calendarId: string) {
-	return `Event URL::${event.htmlLink}\nEvent ID::${event.id}\nSynced Calendar ID::${calendarId}`;
+/**
+ * Converts a Google Calendar event into Tana Paste format string.
+ * Each field is formatted as "field::value" with newlines between multiple fields.
+ *
+ * @param event - The Google Calendar event object containing event details
+ * @param calendarId - The calendar ID where the event resides
+ * @param fieldsToReturn - Array of field configurations specifying which properties to include:
+ *   - `field` (string): The display name for the field in Tana
+ *   - `property` (string): The corresponding property name from the event object (use "calendarId" for calendar ID)
+ *
+ * @returns Tana Paste formatted string with each field as "field::value"
+ */
+function buildTanaPaste(
+	event: gc.CalendarEvent,
+	calendarId: string,
+	fieldsToReturn: EventFieldsToReturn
+): string {
+	return fieldsToReturn.reduce((acc, { field, property }, index) => {
+		const value =
+			property === 'calendarId'
+				? calendarId
+				: event[property as keyof typeof event];
+		if (value) {
+			acc += `${field}::${value}${
+				fieldsToReturn.length > 1 && index !== fieldsToReturn.length - 1
+					? '\n'
+					: ''
+			}`;
+		}
+		return acc;
+	}, '');
+}
+
+/**
+ * Builds an event summary by combining name with optional prefix and suffix.
+ *
+ * @param name - The base event name/title
+ * @param options - Configuration object for title formatting:
+ *   - `prefix` (string): *Optional*. Text to add before the event name
+ *   - `suffix` (string): *Optional*. Text to add after the event name
+ *
+ * @returns The formatted event title with prefix and suffix applied
+ */
+function buildSummary(
+	name: string,
+	options: { prefix?: string; suffix?: string } = {}
+): string {
+	const { prefix = '', suffix = '' } = options;
+	return `${prefix}${name}${suffix}`.trim();
 }
 
 /**
@@ -13,31 +66,36 @@ function buildTanaPaste(event: gc.CalendarEvent, calendarId: string) {
  * @param accessToken - The Google Calendar client access token
  * @param calendarId - The Google Calendar ID where the event will be created
  * @param data - Event data object with the following properties:
- *   - `name` (string): **Required**. Event title/summary (min 1 char, trimmed).
- *   - `date` (TanaDateInfo): **Required**. Event date and time information.
- *   - `description` (string): *Optional*. Event description (default: "", trimmed).
- *   - `timeZone` (string): *Optional*. Valid IANA timezone (default: "Etc/UTC").
- *   - `location` (string): *Optional*. Event location (max 1024 chars, trimmed).
+ *   - `name` (string): Event title/summary (min 1 char, trimmed).
+ *   - `date` (TanaDateInfo): Event date and time information.
+ *   - `description` (string): Event description (default: "", trimmed).
+ *   - `timeZone` (string): Valid IANA timezone (default: "Etc/UTC").
+ *   - `location` (string): Event location (max 1024 chars, trimmed).
+ * @param options - Configuration object for event creation with sensible defaults:
+ *   - `prefix` (string): Text to add before the event name
+ *   - `suffix` (string): Text to add after the event name
+ *   - `fieldsToReturn` (EventFieldsToReturn): Array of field configurations specifying which properties to include in the response (defaults to Event URL, Event ID, and Synced Calendar ID)
  *
- * @returns Promise resolving to Tana Paste formatted string with event URL and ID fields
+ * @returns Tana Paste formatted string containing the specified event fields
  */
 export async function createEvent(
 	accessToken: string,
 	calendarId: string,
-	data: EventData
+	data: EventData,
+	options: EventOptions = DEFAULT_OPTIONS
 ): Promise<string> {
 	const { name, description, date, timeZone, location } = data;
 	const { start, end } = buildEventDateTimeInfo(date, timeZone);
 
 	const event = await gc.insertEvent(accessToken, calendarId, {
-		summary: name,
+		summary: buildSummary(name, options),
 		description,
 		location,
 		start,
 		end,
 	});
 
-	return buildTanaPaste(event, calendarId);
+	return buildTanaPaste(event, calendarId, options.fieldsToReturn!);
 }
 
 /**
@@ -53,20 +111,32 @@ export async function createEvent(
  *   - `description` (string): Event description (trimmed).
  *   - `timeZone` (string): Valid IANA timezone.
  *   - `location` (string): Event location (max 1024 chars, trimmed).
- * @param toCalendarId - Optional. If provided and different from fromCalendarId,
- *                       the event will be moved to this calendar before updating
+ * @param options - Configuration object for event update with sensible defaults:
+ *   - `prefix` (string): Text to add before the event name
+ *   - `suffix` (string): Text to add after the event name
+ *   - `fieldsToReturn` (EventFieldsToReturn): Array of field configurations specifying which properties to include in the response (defaults to Event URL, Event ID, and Synced Calendar ID)
+ * @param toCalendarId - If provided and different from fromCalendarId, the event will be moved to this calendar before updating
  *
- * @returns Promise resolving to Tana Paste formatted string with updated event URL and ID fields
+ * @returns Tana Paste formatted string containing the specified event fields from the updated event
  */
 export async function updateEvent(
 	accessToken: string,
 	fromCalendarId: string,
 	eventId: string,
 	data: PartialEventData,
+	options: EventOptions = DEFAULT_OPTIONS,
 	toCalendarId?: string
 ): Promise<string> {
 	let currentCalendarId = fromCalendarId;
-	let event: gc.CalendarEvent | undefined;
+	let event: gc.CalendarEvent = await gc.getEvent(
+		accessToken,
+		currentCalendarId,
+		eventId
+	);
+
+	if (!event) {
+		throw new Error(`Event not found: ${eventId}`);
+	}
 
 	// Move event to different calendar if toCalendarId is provided and different
 	if (toCalendarId && toCalendarId !== fromCalendarId) {
@@ -90,13 +160,16 @@ export async function updateEvent(
 		// Merge existing event data with updates
 		const updatedEventData = { ...event };
 
-		if (data.name !== undefined) {
+		if (data.name !== undefined && data.name !== event.summary) {
 			updatedEventData.summary = data.name;
 		}
-		if (data.description !== undefined) {
+		if (
+			data.description !== undefined &&
+			data.description !== event.description
+		) {
 			updatedEventData.description = data.description;
 		}
-		if (data.location !== undefined) {
+		if (data.location !== undefined && data.location !== event.location) {
 			updatedEventData.location = data.location;
 		}
 		if (data.date !== undefined) {
@@ -104,11 +177,22 @@ export async function updateEvent(
 				data.date,
 				data.timeZone || 'Etc/UTC'
 			);
-			updatedEventData.start = start;
-			updatedEventData.end = end;
+
+			if (
+				start.dateTime !== event.start?.dateTime ||
+				start.date !== event.start?.date
+			) {
+				updatedEventData.start = start;
+				updatedEventData.end = end;
+			}
+			if (
+				end.dateTime !== event.end?.dateTime ||
+				end.date !== event.end?.date
+			) {
+				updatedEventData.end = end;
+			}
 		}
 
-		// Update the event with complete data
 		event = await gc.updateEvent(
 			accessToken,
 			currentCalendarId,
@@ -117,11 +201,7 @@ export async function updateEvent(
 		);
 	}
 
-	if (!event) {
-		event = await gc.getEvent(accessToken, currentCalendarId, eventId);
-	}
-
-	return buildTanaPaste(event, currentCalendarId);
+	return buildTanaPaste(event, currentCalendarId, options.fieldsToReturn!);
 }
 
 /**
