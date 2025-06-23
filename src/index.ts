@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { showRoutes } from 'hono/dev';
 import { cors } from 'hono/cors';
 import events from './api/events';
 
@@ -19,5 +20,10 @@ app.get('/', (c) => {
 });
 
 app.route('/events', events);
+
+console.log('\x1b[32m%s\x1b[0m', '⎔ Registered routes:');
+showRoutes(app, {
+	colorize: true,
+});
 
 export default app;
