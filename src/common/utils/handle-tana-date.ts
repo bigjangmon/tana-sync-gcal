@@ -2,14 +2,21 @@ import { z } from 'zod';
 import type { calendar_v3 } from '@googleapis/calendar';
 
 const TANA_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const TANA_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const TANA_DATE_TIME_REGEX =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/;
 
 export type TanaDateValue =
 	| `[[date:${string}-${string}-${string}]]` // 1. date only, no time or end date: [[date:2025-06-18]]
 	| `[[date:${string}-${string}-${string}T${string}:${string}]]` // 2. date with start time, no end date: [[date:2025-06-18T00:00]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}]]` // 2b. date with start time including seconds: [[date:2025-06-18T00:00:00]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}.${string}]]` // 2c. date with start time including milliseconds: [[date:2025-06-18T00:00:00.000]]
 	| `[[date:${string}-${string}-${string}/${string}-${string}-${string}]]` // 3. date range without times: [[date:2025-06-18/2025-06-19]]
 	| `[[date:${string}-${string}-${string}T${string}:${string}/${string}-${string}-${string}]]` // 4. start time with end date, no end time: [[date:2025-06-18T08:00/2025-06-19]]
-	| `[[date:${string}-${string}-${string}T${string}:${string}/${string}-${string}-${string}T${string}:${string}]]`; // 5. full date-time range: [[date:2025-06-18T08:00/2025-06-19T08:00]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}/${string}-${string}-${string}]]` // 4b. start time with seconds and end date: [[date:2025-06-18T08:00:00/2025-06-19]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}.${string}/${string}-${string}-${string}]]` // 4c. start time with milliseconds and end date: [[date:2025-06-18T08:00:00.000/2025-06-19]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}/${string}-${string}-${string}T${string}:${string}]]` // 5. full date-time range: [[date:2025-06-18T08:00/2025-06-19T08:00]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}/${string}-${string}-${string}T${string}:${string}:${string}]]` // 5b. full date-time range with seconds: [[date:2025-06-18T08:00:00/2025-06-19T08:00:00]]
+	| `[[date:${string}-${string}-${string}T${string}:${string}:${string}.${string}/${string}-${string}-${string}T${string}:${string}:${string}.${string}]]`; // 5c. full date-time range with milliseconds: [[date:2025-06-18T08:00:00.000/2025-06-19T08:00:00.000]]
 
 export interface TanaDateInfo {
 	original: TanaDateValue;
@@ -99,9 +106,15 @@ export const TanaDateInfoSchema = z
 		message: `Invalid Tana date format: "${value}". Expected formats:
 	- "[[date:YYYY-MM-DD]]" => Single date
 	- "[[date:YYYY-MM-DDTHH:MM]]" => Single date with time
+	- "[[date:YYYY-MM-DDTHH:MM:SS]]" => Single date with seconds
+	- "[[date:YYYY-MM-DDTHH:MM:SS.SSS]]" => Single date with milliseconds
 	- "[[date:YYYY-MM-DD/YYYY-MM-DD]]" => Date range
 	- "[[date:YYYY-MM-DDTHH:MM/YYYY-MM-DD]]" => Start time with end date
+	- "[[date:YYYY-MM-DDTHH:MM:SS/YYYY-MM-DD]]" => Start time with seconds and end date
+	- "[[date:YYYY-MM-DDTHH:MM:SS.SSS/YYYY-MM-DD]]" => Start time with milliseconds and end date
 	- "[[date:YYYY-MM-DDTHH:MM/YYYY-MM-DDTHH:MM]]" => Full date-time range
+	- "[[date:YYYY-MM-DDTHH:MM:SS/YYYY-MM-DDTHH:MM:SS]]" => Full date-time range with seconds
+	- "[[date:YYYY-MM-DDTHH:MM:SS.SSS/YYYY-MM-DDTHH:MM:SS.SSS]]" => Full date-time range with milliseconds
 	Example: "[[date:2025-01-15]]" or "[[date:2025-01-15T09:30/2025-01-16T17:00]]"`,
 	}))
 	.transform(extractTanaDateInfo);
@@ -112,8 +125,15 @@ export function buildEventDateTimeInfo(
 ): EventDateTimeInfo {
 	function createEventDateTime(dateTimeString: string): EventDateTime {
 		if (TANA_DATE_TIME_REGEX.test(dateTimeString)) {
+			// If the string already has seconds, use it as is
+			// If it only has HH:MM, append :00 for seconds
+			const hasSeconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(
+				dateTimeString
+			);
+			const dateTime = hasSeconds ? dateTimeString : `${dateTimeString}:00`;
+
 			return {
-				dateTime: `${dateTimeString}:00`,
+				dateTime,
 				timeZone,
 			};
 		} else if (TANA_DATE_REGEX.test(dateTimeString)) {
