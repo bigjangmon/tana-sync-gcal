@@ -189,7 +189,7 @@ export async function updateEvent(
 		const updatedEventData = { ...event };
 
 		if (data.name !== undefined && data.name !== event.summary) {
-			updatedEventData.summary = data.name;
+			updatedEventData.summary = buildSummary(data.name, options);
 		}
 		if (
 			data.description !== undefined &&
