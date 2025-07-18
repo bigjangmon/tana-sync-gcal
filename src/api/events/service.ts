@@ -188,8 +188,11 @@ export async function updateEvent(
 		// Merge existing event data with updates
 		const updatedEventData = { ...event };
 
-		if (data.name !== undefined && data.name !== event.summary) {
-			updatedEventData.summary = data.name;
+		if (data.name !== undefined) {
+			const newSummary = buildSummary(data.name, options);
+			if (newSummary !== event.summary) {
+				updatedEventData.summary = newSummary;
+			}
 		}
 		if (
 			data.description !== undefined &&
